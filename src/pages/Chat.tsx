@@ -92,7 +92,7 @@ export default function Chat() {
   };
 
   const createConversation = async () => {
-    if (!userId) return;
+    if (!userId) return null;
 
     const { data, error } = await supabase
       .from("conversations")
@@ -107,12 +107,13 @@ export default function Chat() {
         description: "Não foi possível criar uma nova conversa.",
         variant: "destructive",
       });
-      return;
+      return null;
     }
 
     setConversations([data, ...conversations]);
     setCurrentConversationId(data.id);
     setMessages([]);
+    return data.id;
   };
 
   const handleSelectConversation = (id: string) => {
@@ -163,10 +164,23 @@ export default function Chat() {
   };
 
   const handleSendMessage = async (content: string, files?: File[]) => {
-    if (!currentConversationId || !userId) {
-      await createConversation();
-      // Reenviar após criar conversa
-      setTimeout(() => handleSendMessage(content, files), 100);
+    // Prevenir envio se já estiver carregando
+    if (isLoading) return;
+
+    // Criar conversa se necessário
+    let conversationId = currentConversationId;
+    if (!conversationId && userId) {
+      const newConvId = await createConversation();
+      if (!newConvId) return; // Falhou ao criar conversa
+      conversationId = newConvId;
+    }
+
+    if (!conversationId || !userId) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível iniciar uma conversa. Tente novamente.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -182,22 +196,33 @@ export default function Chat() {
     }
 
     const userMessage: Message = { role: "user", content: userMessageContent };
-    setMessages((prev) => [...prev, userMessage]);
+    const currentMessages = [...messages, userMessage];
+    setMessages(currentMessages);
     setIsLoading(true);
 
-    // Save user message
-    await supabase.from("messages").insert({
-      conversation_id: currentConversationId,
-      role: "user",
-      content: userMessageContent,
-    });
-
     try {
-      const response = await supabase.functions.invoke("chat", {
-        body: { messages: [...messages, userMessage] },
+      // Save user message
+      const { error: insertError } = await supabase.from("messages").insert({
+        conversation_id: conversationId,
+        role: "user",
+        content: userMessageContent,
       });
 
-      if (response.error) throw response.error;
+      if (insertError) throw insertError;
+
+      // Call AI
+      const response = await supabase.functions.invoke("chat", {
+        body: { messages: currentMessages },
+      });
+
+      if (response.error) {
+        console.error("Edge function error:", response.error);
+        throw new Error(response.error.message || "Erro ao chamar a IA");
+      }
+
+      if (!response.data?.body) {
+        throw new Error("Resposta inválida da IA");
+      }
 
       const reader = response.data.body.getReader();
       const decoder = new TextDecoder();
@@ -228,7 +253,9 @@ export default function Chat() {
               assistantMessage += delta;
               setMessages((prev) => {
                 const newMessages = [...prev];
-                newMessages[newMessages.length - 1].content = assistantMessage;
+                if (newMessages[newMessages.length - 1]?.role === "assistant") {
+                  newMessages[newMessages.length - 1].content = assistantMessage;
+                }
                 return newMessages;
               });
             }
@@ -239,16 +266,19 @@ export default function Chat() {
       }
 
       // Save assistant message
-      await supabase.from("messages").insert({
-        conversation_id: currentConversationId,
-        role: "assistant",
-        content: assistantMessage,
-      });
+      if (assistantMessage) {
+        await supabase.from("messages").insert({
+          conversation_id: conversationId,
+          role: "assistant",
+          content: assistantMessage,
+        });
 
-      // Update conversation title if it's the first message
-      if (messages.length === 0) {
-        const title = content.slice(0, 50) + (content.length > 50 ? "..." : "");
-        await handleRenameConversation(currentConversationId, title);
+        // Update conversation title if it's the first exchange
+        if (currentMessages.length <= 1) {
+          const title = content.slice(0, 50) + (content.length > 50 ? "..." : "");
+          await handleRenameConversation(conversationId, title);
+          await loadConversations(userId);
+        }
       }
     } catch (error: any) {
       console.error("Error sending message:", error);
@@ -257,7 +287,16 @@ export default function Chat() {
         description: error.message || "Não foi possível enviar a mensagem.",
         variant: "destructive",
       });
-      setMessages((prev) => prev.slice(0, -1));
+      // Remove a mensagem do assistente vazia em caso de erro
+      setMessages((prev) => {
+        const filtered = prev.filter((msg, idx) => {
+          if (idx === prev.length - 1 && msg.role === "assistant" && !msg.content) {
+            return false;
+          }
+          return true;
+        });
+        return filtered;
+      });
     } finally {
       setIsLoading(false);
     }
