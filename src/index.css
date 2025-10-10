@@ -39,12 +39,18 @@ All colors MUST be HSL.
 
     --radius: 0.75rem;
 
+    --user-message: 210 100% 97%;
+    --user-message-foreground: 220 15% 10%;
+    --assistant-message: 220 15% 96%;
+    --assistant-message-foreground: 220 15% 10%;
+
     --gradient-primary: linear-gradient(135deg, hsl(262 83% 58%), hsl(200 95% 55%));
     --gradient-secondary: linear-gradient(180deg, hsl(220 15% 97%), hsl(220 15% 92%));
     --gradient-glow: linear-gradient(135deg, hsl(262 83% 68% / 0.1), hsl(200 95% 65% / 0.1));
 
     --shadow-glow: 0 8px 32px hsl(262 83% 58% / 0.15);
     --shadow-subtle: 0 2px 8px hsl(220 15% 10% / 0.05);
+    --shadow-message: 0 1px 2px hsl(220 15% 10% / 0.05);
 
     --sidebar-background: 220 20% 14%;
     --sidebar-foreground: 220 15% 92%;
@@ -86,12 +92,18 @@ All colors MUST be HSL.
     --input: 220 20% 18%;
     --ring: 262 83% 58%;
 
+    --user-message: 210 100% 22%;
+    --user-message-foreground: 220 15% 92%;
+    --assistant-message: 220 20% 16%;
+    --assistant-message-foreground: 220 15% 92%;
+
     --gradient-primary: linear-gradient(135deg, hsl(262 83% 58%), hsl(200 95% 55%));
     --gradient-secondary: linear-gradient(180deg, hsl(220 20% 14%), hsl(220 20% 11%));
     --gradient-glow: linear-gradient(135deg, hsl(262 83% 68% / 0.2), hsl(200 95% 65% / 0.2));
 
     --shadow-glow: 0 8px 32px hsl(262 83% 58% / 0.25);
     --shadow-subtle: 0 2px 8px hsl(0 0% 0% / 0.2);
+    --shadow-message: 0 1px 3px hsl(0 0% 0% / 0.3);
 
     --sidebar-background: 220 20% 11%;
     --sidebar-foreground: 220 15% 92%;
@@ -139,7 +151,114 @@ All colors MUST be HSL.
     box-shadow: var(--shadow-subtle);
   }
 
+  .shadow-message {
+    box-shadow: var(--shadow-message);
+  }
+
   .transition-smooth {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted)) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted));
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.5);
+  }
+}
+
+/* Markdown Styles */
+.prose {
+  max-width: 100%;
+}
+
+.prose pre {
+  @apply bg-muted rounded-lg p-4 overflow-x-auto my-4;
+}
+
+.prose code {
+  @apply bg-muted px-1.5 py-0.5 rounded text-sm;
+}
+
+.prose pre code {
+  @apply bg-transparent p-0;
+}
+
+.prose p {
+  @apply mb-4;
+}
+
+.prose ul, .prose ol {
+  @apply mb-4 ml-6;
+}
+
+.prose ul {
+  @apply list-disc;
+}
+
+.prose ol {
+  @apply list-decimal;
+}
+
+.prose li {
+  @apply mb-2;
+}
+
+.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+  @apply font-bold mb-3 mt-6;
+}
+
+.prose h1 {
+  @apply text-2xl;
+}
+
+.prose h2 {
+  @apply text-xl;
+}
+
+.prose h3 {
+  @apply text-lg;
+}
+
+.prose blockquote {
+  @apply border-l-4 border-primary pl-4 italic my-4 text-muted-foreground;
+}
+
+.prose a {
+  @apply text-primary hover:underline;
+}
+
+.prose table {
+  @apply w-full border-collapse my-4;
+}
+
+.prose th, .prose td {
+  @apply border border-border px-4 py-2;
+}
+
+.prose th {
+  @apply bg-muted font-semibold;
+}
+
+.prose strong {
+  @apply font-bold;
+}
+
+.prose em {
+  @apply italic;
 }

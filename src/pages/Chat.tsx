@@ -162,13 +162,26 @@ export default function Chat() {
     );
   };
 
-  const handleSendMessage = async (content: string) => {
+  const handleSendMessage = async (content: string, files?: File[]) => {
     if (!currentConversationId || !userId) {
       await createConversation();
+      // Reenviar após criar conversa
+      setTimeout(() => handleSendMessage(content, files), 100);
       return;
     }
 
-    const userMessage: Message = { role: "user", content };
+    // Preparar mensagem do usuário
+    let userMessageContent = content;
+    
+    // Se houver arquivos, adicionar informação sobre eles
+    if (files && files.length > 0) {
+      const fileList = files.map((f) => `📎 ${f.name}`).join("\n");
+      userMessageContent = content
+        ? `${content}\n\n${fileList}`
+        : fileList;
+    }
+
+    const userMessage: Message = { role: "user", content: userMessageContent };
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
 
@@ -176,7 +189,7 @@ export default function Chat() {
     await supabase.from("messages").insert({
       conversation_id: currentConversationId,
       role: "user",
-      content,
+      content: userMessageContent,
     });
 
     try {
@@ -307,7 +320,15 @@ export default function Chat() {
           ) : (
             <div>
               {messages.map((message, index) => (
-                <ChatMessage key={index} {...message} />
+                <ChatMessage
+                  key={index}
+                  {...message}
+                  isStreaming={
+                    isLoading &&
+                    index === messages.length - 1 &&
+                    message.role === "assistant"
+                  }
+                />
               ))}
               <div ref={scrollRef} />
             </div>

@@ -61,7 +61,7 @@ export function ChatSidebar({
         </Button>
       </div>
 
-      <ScrollArea className="flex-1 px-2">
+      <ScrollArea className="flex-1 px-2 scrollbar-thin">
         <div className="space-y-1 py-2">
           {conversations.map((conversation) => (
             <div
