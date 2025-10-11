@@ -210,9 +210,38 @@ export default function Chat() {
 
       if (insertError) throw insertError;
 
-      // Call AI
+      // Processar arquivos para base64
+      let processedFiles = [];
+      if (files && files.length > 0) {
+        toast({
+          title: "Processando arquivos...",
+          description: "Extraindo conteúdo dos arquivos enviados.",
+        });
+
+        processedFiles = await Promise.all(
+          files.map(async (file) => {
+            return new Promise<{ name: string; type: string; data: string }>((resolve) => {
+              const reader = new FileReader();
+              reader.onload = () => {
+                const base64 = (reader.result as string).split(',')[1];
+                resolve({
+                  name: file.name,
+                  type: file.type,
+                  data: base64,
+                });
+              };
+              reader.readAsDataURL(file);
+            });
+          })
+        );
+      }
+
+      // Call AI with files
       const response = await supabase.functions.invoke("chat", {
-        body: { messages: currentMessages },
+        body: { 
+          messages: currentMessages,
+          files: processedFiles 
+        },
       });
 
       if (response.error) {
