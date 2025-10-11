@@ -7,7 +7,8 @@ import { ChatInput } from "@/components/ChatInput";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Sparkles } from "lucide-react";
+import { LogOut, Sparkles, Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 
 interface Message {
   role: "user" | "assistant" | "system";
@@ -29,6 +30,7 @@ export default function Chat() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -348,7 +350,7 @@ export default function Chat() {
       />
 
       <div className="flex flex-1 flex-col">
-        <header className="flex h-16 items-center justify-between border-b border-border px-6">
+        <header className="flex h-16 items-center justify-between border-b border-border px-6 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary shadow-glow">
               <Sparkles className="h-5 w-5 text-white" />
@@ -360,14 +362,24 @@ export default function Chat() {
               </p>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleLogout}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <LogOut className="h-5 w-5" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleLogout}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="h-5 w-5" />
+            </Button>
+          </div>
         </header>
 
         <ScrollArea className="flex-1">
@@ -386,17 +398,18 @@ export default function Chat() {
               </div>
             </div>
           ) : (
-            <div>
+            <div className="py-4">
               {messages.map((message, index) => (
-                <ChatMessage
-                  key={index}
-                  {...message}
-                  isStreaming={
-                    isLoading &&
-                    index === messages.length - 1 &&
-                    message.role === "assistant"
-                  }
-                />
+                <div key={index} className="mb-6">
+                  <ChatMessage
+                    {...message}
+                    isStreaming={
+                      isLoading &&
+                      index === messages.length - 1 &&
+                      message.role === "assistant"
+                    }
+                  />
+                </div>
               ))}
               <div ref={scrollRef} />
             </div>

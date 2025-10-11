@@ -79,35 +79,71 @@ function formatMessagesWithFiles(messages: any[], processedFiles: any[]) {
   }
   
   const formattedMessages = [...messages];
-  const lastMessage = formattedMessages[formattedMessages.length - 1];
+  const lastMessageIndex = formattedMessages.length - 1;
+  const lastMessage = formattedMessages[lastMessageIndex];
   
-  // Construir contexto dos arquivos
-  let filesContext = '\n\n📎 Arquivos anexados:\n';
-  const imageFiles = [];
+  // Separar imagens e outros arquivos
+  const imageFiles = processedFiles.filter(f => f.type === 'image');
+  const otherFiles = processedFiles.filter(f => f.type !== 'image');
   
-  for (const file of processedFiles) {
-    if (file.type === 'image') {
-      imageFiles.push(file);
-      filesContext += `- 🖼️ ${file.name} (imagem para análise)\n`;
-    } else if (file.type === 'text') {
-      filesContext += `- 📄 ${file.name}:\n\`\`\`\n${file.content}\n\`\`\`\n`;
-    } else if (file.type === 'document') {
-      filesContext += `- 📋 ${file.name} (${file.fileType})\n`;
-    } else {
-      filesContext += `- 📎 ${file.name}\n`;
-    }
-  }
-  
-  // Se houver imagens, preparar para envio multimodal
+  // Se houver imagens, usar formato multimodal
   if (imageFiles.length > 0) {
-    // Gemini 2.5 Flash suporta análise de imagens
-    // Adicionar contexto sobre as imagens
-    filesContext += '\nPor favor, analise as imagens anexadas e responda com base no conteúdo visual.';
-  }
-  
-  // Adicionar contexto ao conteúdo da última mensagem
-  if (typeof lastMessage.content === 'string') {
-    lastMessage.content = lastMessage.content + filesContext;
+    const contentParts: any[] = [];
+    
+    // Adicionar texto original
+    if (typeof lastMessage.content === 'string') {
+      contentParts.push({
+        type: 'text',
+        text: lastMessage.content
+      });
+    }
+    
+    // Adicionar contexto de outros arquivos
+    if (otherFiles.length > 0) {
+      let filesContext = '\n\n📎 Arquivos anexados:\n';
+      for (const file of otherFiles) {
+        if (file.type === 'text') {
+          filesContext += `- 📄 ${file.name}:\n\`\`\`\n${file.content}\n\`\`\`\n`;
+        } else if (file.type === 'document') {
+          filesContext += `- 📋 ${file.name} (${file.fileType}) - Documento identificado mas conteúdo não extraído ainda.\n`;
+        } else {
+          filesContext += `- 📎 ${file.name}\n`;
+        }
+      }
+      contentParts[0].text += filesContext;
+    }
+    
+    // Adicionar imagens no formato correto
+    for (const img of imageFiles) {
+      contentParts.push({
+        type: 'image_url',
+        image_url: {
+          url: `data:${img.mimeType};base64,${img.data}`
+        }
+      });
+    }
+    
+    // Substituir conteúdo da última mensagem
+    formattedMessages[lastMessageIndex] = {
+      ...lastMessage,
+      content: contentParts
+    };
+  } else {
+    // Apenas arquivos de texto/documentos
+    let filesContext = '\n\n📎 Arquivos anexados:\n';
+    for (const file of otherFiles) {
+      if (file.type === 'text') {
+        filesContext += `- 📄 ${file.name}:\n\`\`\`\n${file.content}\n\`\`\`\n`;
+      } else if (file.type === 'document') {
+        filesContext += `- 📋 ${file.name} (${file.fileType}) - Documento identificado mas conteúdo não extraído ainda.\n`;
+      } else {
+        filesContext += `- 📎 ${file.name}\n`;
+      }
+    }
+    
+    if (typeof lastMessage.content === 'string') {
+      lastMessage.content = lastMessage.content + filesContext;
+    }
   }
   
   return formattedMessages;

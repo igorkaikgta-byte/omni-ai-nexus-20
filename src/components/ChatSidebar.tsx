@@ -50,27 +50,27 @@ export function ChatSidebar({
   };
 
   return (
-    <div className="flex h-full w-64 flex-col bg-sidebar-background border-r border-sidebar-border">
-      <div className="p-4 border-b border-sidebar-border">
+    <div className="flex h-full w-64 flex-col bg-sidebar-background border-r border-sidebar-border shadow-lg">
+      <div className="p-4 border-b border-sidebar-border bg-sidebar-background">
         <Button
           onClick={onNewConversation}
-          className="w-full gradient-primary hover:opacity-90 transition-smooth shadow-glow"
+          className="w-full gradient-primary hover:opacity-90 transition-smooth shadow-glow text-base font-semibold"
         >
-          <Plus className="mr-2 h-4 w-4" />
+          <Plus className="mr-2 h-5 w-5" />
           Nova Conversa
         </Button>
       </div>
 
-      <ScrollArea className="flex-1 px-2 scrollbar-thin">
-        <div className="space-y-1 py-2">
+      <ScrollArea className="flex-1 px-3 scrollbar-thin">
+        <div className="space-y-2 py-3">
           {conversations.map((conversation) => (
             <div
               key={conversation.id}
               className={cn(
-                "group relative flex items-center gap-2 rounded-lg px-3 py-2.5 transition-smooth",
+                "group relative flex items-center gap-3 rounded-lg px-3 py-3 transition-smooth border",
                 currentConversationId === conversation.id
-                  ? "bg-sidebar-accent"
-                  : "hover:bg-sidebar-accent/50"
+                  ? "bg-sidebar-accent border-primary/20 shadow-sm"
+                  : "hover:bg-sidebar-accent/50 border-transparent hover:border-sidebar-border"
               )}
             >
               {editingId === conversation.id ? (
@@ -104,10 +104,10 @@ export function ChatSidebar({
                 </div>
               ) : (
                 <>
-                  <MessageSquare className="h-4 w-4 shrink-0 text-sidebar-foreground/60" />
+                  <MessageSquare className="h-5 w-5 shrink-0 text-primary" />
                   <button
                     onClick={() => onSelectConversation(conversation.id)}
-                    className="flex-1 truncate text-left text-sm text-sidebar-foreground"
+                    className="flex-1 truncate text-left text-base font-medium text-sidebar-foreground"
                   >
                     {conversation.title}
                   </button>
