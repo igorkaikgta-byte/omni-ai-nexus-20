@@ -1,8 +1,9 @@
-import { Send, Paperclip, Loader2 } from "lucide-react";
+import { Send, Paperclip, Loader2, Mic, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 
 interface ChatInputProps {
   onSendMessage: (content: string, files?: File[]) => void;
@@ -14,6 +15,14 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { isListening, transcript, startListening, stopListening, resetTranscript } = useSpeechRecognition();
+
+  // Update message when transcript changes
+  useEffect(() => {
+    if (transcript) {
+      setMessage(transcript);
+    }
+  }, [transcript]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,6 +30,15 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
       onSendMessage(message, selectedFiles);
       setMessage("");
       setSelectedFiles([]);
+      resetTranscript();
+    }
+  };
+
+  const handleMicClick = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
     }
   };
 
@@ -110,6 +128,18 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
           onClick={() => fileInputRef.current?.click()}
         >
           <Paperclip className="h-5 w-5" />
+        </Button>
+
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className={`shrink-0 transition-smooth hover:scale-105 ${isListening ? 'text-destructive animate-pulse' : ''}`}
+          disabled={isLoading}
+          onClick={handleMicClick}
+          title={isListening ? "Parar gravação" : "Gravar áudio"}
+        >
+          {isListening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
         </Button>
         
         <Textarea
