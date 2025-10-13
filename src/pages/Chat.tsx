@@ -165,6 +165,63 @@ export default function Chat() {
     );
   };
 
+  const handleDuplicateConversation = async (id: string) => {
+    if (!userId) return;
+
+    const originalConversation = conversations.find((c) => c.id === id);
+    if (!originalConversation) return;
+
+    // Load messages from original conversation
+    const { data: originalMessages } = await supabase
+      .from("messages")
+      .select("role, content")
+      .eq("conversation_id", id)
+      .order("created_at", { ascending: true });
+
+    // Create new conversation
+    const { data: newConversation, error: convError } = await supabase
+      .from("conversations")
+      .insert({
+        user_id: userId,
+        title: `${originalConversation.title} (cópia)`,
+      })
+      .select()
+      .single();
+
+    if (convError || !newConversation) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível duplicar a conversa.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Copy messages to new conversation
+    if (originalMessages && originalMessages.length > 0) {
+      const messagesToInsert = originalMessages.map((msg) => ({
+        conversation_id: newConversation.id,
+        role: msg.role,
+        content: msg.content,
+      }));
+
+      await supabase.from("messages").insert(messagesToInsert);
+    }
+
+    // Update conversations list
+    await loadConversations(userId);
+    setCurrentConversationId(newConversation.id);
+    setMessages((originalMessages || []).map(msg => ({
+      role: msg.role as "user" | "assistant" | "system",
+      content: msg.content
+    })));
+
+    toast({
+      title: "Conversa duplicada",
+      description: "A conversa foi duplicada com sucesso.",
+    });
+  };
+
   const handleSendMessage = async (content: string, files?: File[]) => {
     // Prevenir envio se já estiver carregando
     if (isLoading) return;
@@ -340,14 +397,15 @@ export default function Chat() {
 
   return (
     <div className="flex h-screen">
-      <ChatSidebar
-        conversations={conversations}
-        currentConversationId={currentConversationId}
-        onSelectConversation={handleSelectConversation}
-        onNewConversation={createConversation}
-        onDeleteConversation={handleDeleteConversation}
-        onRenameConversation={handleRenameConversation}
-      />
+        <ChatSidebar
+          conversations={conversations}
+          currentConversationId={currentConversationId}
+          onSelectConversation={handleSelectConversation}
+          onNewConversation={createConversation}
+          onDeleteConversation={handleDeleteConversation}
+          onRenameConversation={handleRenameConversation}
+          onDuplicateConversation={handleDuplicateConversation}
+        />
 
       <div className="flex flex-1 flex-col">
         <header className="flex h-16 items-center justify-between border-b border-border px-6 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
