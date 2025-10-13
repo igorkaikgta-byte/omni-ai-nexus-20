@@ -1,4 +1,4 @@
-import { Plus, MessageSquare, MoreVertical, Edit2, Trash2, Copy } from "lucide-react";
+import { Plus, MessageSquare, MoreVertical, Edit2, Trash2, Copy, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState } from "react";
@@ -106,18 +106,18 @@ export function ChatSidebar({
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-7 w-7 p-0"
+                    className="h-7 w-7 p-0 hover:bg-muted hover:text-primary"
                     onClick={saveEdit}
                   >
-                    <Edit2 className="h-3.5 w-3.5" />
+                    <Check className="h-3.5 w-3.5" />
                   </Button>
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-7 w-7 p-0"
+                    className="h-7 w-7 p-0 hover:bg-muted hover:text-destructive"
                     onClick={cancelEdit}
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <X className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               ) : (
@@ -129,35 +129,49 @@ export function ChatSidebar({
                   >
                     {conversation.title}
                   </button>
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-7 w-7 p-0 text-sidebar-foreground/60 hover:text-sidebar-foreground"
+                          className="h-7 w-7 p-0 text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+                          onClick={(e) => e.stopPropagation()}
                         >
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuContent 
+                        align="end" 
+                        className="w-48 bg-popover z-50"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <DropdownMenuItem
-                          onClick={() => startEditing(conversation)}
-                          className="cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            startEditing(conversation);
+                          }}
+                          className="cursor-pointer hover:bg-muted focus:bg-muted"
                         >
                           <Edit2 className="mr-2 h-4 w-4" />
                           Renomear conversa
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => onDuplicateConversation(conversation.id)}
-                          className="cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDuplicateConversation(conversation.id);
+                          }}
+                          className="cursor-pointer hover:bg-muted focus:bg-muted"
                         >
                           <Copy className="mr-2 h-4 w-4" />
                           Duplicar conversa
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => handleDelete(conversation.id)}
-                          className="cursor-pointer text-destructive focus:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(conversation.id);
+                          }}
+                          className="cursor-pointer text-destructive hover:bg-destructive/10 focus:bg-destructive/10 focus:text-destructive"
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
                           Excluir conversa
