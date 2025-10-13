@@ -129,7 +129,18 @@ export function ChatSidebar({
                   >
                     {conversation.title}
                   </button>
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0 text-sidebar-foreground/60 hover:text-destructive hover:bg-destructive/10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(conversation.id);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
