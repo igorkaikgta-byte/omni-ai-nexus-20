@@ -1,93 +1,158 @@
-<div
-  key={conversation.id}
-  className={cn(
-    "group relative flex items-center gap-3 rounded-lg px-3 py-3 transition-all duration-300 border cursor-pointer",
-    currentConversationId === conversation.id
-      ? "bg-sidebar-accent border-primary/20 shadow-sm"
-      : "hover:bg-sidebar-accent/50 border-transparent hover:border-sidebar-border",
-    deletingId === conversation.id && "opacity-0 scale-95"
-  )}
-  onClick={() => onSelectConversation(conversation.id)}
->
-  {editingId === conversation.id ? (
-    <div className="flex-1 flex items-center gap-2">
-      <Input
-        value={editTitle}
-        onChange={(e) => setEditTitle(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") saveEdit();
-          if (e.key === "Escape") cancelEdit();
-        }}
-        className="h-7 text-sm bg-background"
-        autoFocus
-      />
-      <Button
-        size="sm"
-        variant="ghost"
-        className="h-7 w-7 p-0 hover:bg-muted hover:text-primary"
-        onClick={saveEdit}
-      >
-        <Check className="h-3.5 w-3.5" />
-      </Button>
-      <Button
-        size="sm"
-        variant="ghost"
-        className="h-7 w-7 p-0 hover:bg-muted hover:text-destructive"
-        onClick={cancelEdit}
-      >
-        <X className="h-3.5 w-3.5" />
-      </Button>
-    </div>
-  ) : (
-    <>
-      <MessageSquare className="h-5 w-5 shrink-0 text-primary" />
-      <span className="flex-1 truncate text-left text-base font-medium text-sidebar-foreground">
-        {conversation.title}
-      </span>
+import { useState } from "react";
+import ChatSidebar from "@/components/ChatSidebar";
+import { ChatMessage } from "@/components/ChatMessage";
+import { ChatInput } from "@/components/ChatInput";
+import { v4 as uuidv4 } from "uuid";
 
-      {/* --- Botões laterais --- */}
-      <div className="absolute right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 w-7 p-0 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
+interface Message {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
+}
 
-          <DropdownMenuContent
-            align="end"
-            className="w-48 bg-popover z-[9999]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <DropdownMenuItem
-              onClick={() => startEditing(conversation)}
-              className="cursor-pointer hover:bg-muted focus:bg-muted"
-            >
-              <Edit2 className="mr-2 h-4 w-4" />
-              Renomear
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => onDuplicateConversation(conversation.id)}
-              className="cursor-pointer hover:bg-muted focus:bg-muted"
-            >
-              <Copy className="mr-2 h-4 w-4" />
-              Duplicar
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => handleDelete(conversation.id)}
-              className="cursor-pointer text-destructive hover:bg-destructive/10 focus:bg-destructive/10 focus:text-destructive"
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Excluir
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+interface Conversation {
+  id: string;
+  title: string;
+  messages: Message[];
+}
+
+export default function Chat() {
+  const [conversations, setConversations] = useState<Conversation[]>([
+    {
+      id: "1",
+      title: "Nova Conversa",
+      messages: [],
+    },
+  ]);
+  const [currentConversationId, setCurrentConversationId] = useState<string>("1");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const currentConversation = conversations.find(
+    (c) => c.id === currentConversationId
+  );
+
+  const handleNewConversation = () => {
+    const newConv: Conversation = {
+      id: uuidv4(),
+      title: "Nova Conversa",
+      messages: [],
+    };
+    setConversations([...conversations, newConv]);
+    setCurrentConversationId(newConv.id);
+  };
+
+  const handleDeleteConversation = (id: string) => {
+    const filtered = conversations.filter((c) => c.id !== id);
+    setConversations(filtered);
+    
+    if (currentConversationId === id) {
+      setCurrentConversationId(filtered[0]?.id || "");
+    }
+  };
+
+  const handleRenameConversation = (id: string, newTitle: string) => {
+    setConversations(
+      conversations.map((c) => (c.id === id ? { ...c, title: newTitle } : c))
+    );
+  };
+
+  const handleDuplicateConversation = (id: string) => {
+    const conv = conversations.find((c) => c.id === id);
+    if (!conv) return;
+
+    const duplicate: Conversation = {
+      id: uuidv4(),
+      title: `${conv.title} (Cópia)`,
+      messages: [...conv.messages],
+    };
+    setConversations([...conversations, duplicate]);
+  };
+
+  const handleSendMessage = (content: string) => {
+    if (!currentConversationId) return;
+
+    const newMessage: Message = {
+      id: uuidv4(),
+      role: "user",
+      content,
+      timestamp: new Date(),
+    };
+
+    setConversations(
+      conversations.map((c) =>
+        c.id === currentConversationId
+          ? {
+              ...c,
+              messages: [...c.messages, newMessage],
+              title: c.messages.length === 0 ? content.slice(0, 30) : c.title,
+            }
+          : c
+      )
+    );
+
+    // Simular resposta da IA
+    setIsLoading(true);
+    setTimeout(() => {
+      const aiMessage: Message = {
+        id: uuidv4(),
+        role: "assistant",
+        content: "Esta é uma resposta simulada da IA.",
+        timestamp: new Date(),
+      };
+
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === currentConversationId
+            ? { ...c, messages: [...c.messages, aiMessage] }
+            : c
+        )
+      );
+      setIsLoading(false);
+    }, 1000);
+  };
+
+  return (
+    <div className="flex h-screen w-full overflow-hidden bg-background">
+      {/* Sidebar */}
+      <div className="w-72 flex-shrink-0">
+        <ChatSidebar
+          conversations={conversations}
+          currentConversationId={currentConversationId}
+          onSelectConversation={setCurrentConversationId}
+          onNewConversation={handleNewConversation}
+          onDeleteConversation={handleDeleteConversation}
+          onRenameConversation={handleRenameConversation}
+          onDuplicateConversation={handleDuplicateConversation}
+        />
       </div>
-    </>
-  )}
-</div>
+
+      {/* Área principal do chat */}
+      <div className="flex flex-1 flex-col">
+        {/* Mensagens */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {currentConversation?.messages.length === 0 ? (
+            <div className="flex h-full items-center justify-center">
+              <p className="text-muted-foreground">
+                Envie uma mensagem para começar
+              </p>
+            </div>
+          ) : (
+            currentConversation?.messages.map((message) => (
+              <ChatMessage
+                key={message.id}
+                role={message.role}
+                content={message.content}
+              />
+            ))
+          )}
+        </div>
+
+        {/* Input de mensagem */}
+        <div className="border-t bg-background p-4">
+          <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
+        </div>
+      </div>
+    </div>
+  );
+}
