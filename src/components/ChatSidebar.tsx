@@ -1,33 +1,42 @@
-import { Plus, MessageSquare, MoreVertical, Edit2, Trash2, Copy, Check, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useState } from "react";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+"use client"
+
+import { useState } from "react"
+import { cn } from "@/lib/utils"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import {
+  MessageSquare,
+  MoreVertical,
+  Trash2,
+  Edit2,
+  Copy,
+  Plus,
+  Check,
+  X,
+} from "lucide-react"
 
 interface Conversation {
-  id: string;
-  title: string;
-  updated_at: string;
+  id: string
+  title: string
 }
 
 interface ChatSidebarProps {
-  conversations: Conversation[];
-  currentConversationId: string | null;
-  onSelectConversation: (id: string) => void;
-  onNewConversation: () => void;
-  onDeleteConversation: (id: string) => void;
-  onRenameConversation: (id: string, newTitle: string) => void;
-  onDuplicateConversation: (id: string) => void;
+  conversations: Conversation[]
+  currentConversationId?: string
+  onSelectConversation: (id: string) => void
+  onNewConversation: () => void
+  onDeleteConversation: (id: string) => void
+  onRenameConversation: (id: string, newTitle: string) => void
+  onDuplicateConversation: (id: string) => void
 }
 
-export function ChatSidebar({
+export default function ChatSidebar({
   conversations,
   currentConversationId,
   onSelectConversation,
@@ -36,60 +45,68 @@ export function ChatSidebar({
   onRenameConversation,
   onDuplicateConversation,
 }: ChatSidebarProps) {
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editTitle, setEditTitle] = useState("")
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const startEditing = (conversation: Conversation) => {
-    setEditingId(conversation.id);
-    setEditTitle(conversation.title);
-  };
+    setEditingId(conversation.id)
+    setEditTitle(conversation.title)
+  }
 
   const saveEdit = () => {
     if (editingId && editTitle.trim()) {
-      onRenameConversation(editingId, editTitle.trim());
+      onRenameConversation(editingId, editTitle.trim())
     }
-    setEditingId(null);
-    setEditTitle("");
-  };
+    setEditingId(null)
+  }
 
   const cancelEdit = () => {
-    setEditingId(null);
-    setEditTitle("");
-  };
+    setEditingId(null)
+    setEditTitle("")
+  }
 
   const handleDelete = (id: string) => {
-    setDeletingId(id);
+    setDeletingId(id)
     setTimeout(() => {
-      onDeleteConversation(id);
-      setDeletingId(null);
-    }, 300);
-  };
+      onDeleteConversation(id)
+      setDeletingId(null)
+    }, 300)
+  }
 
   return (
-    <div className="flex h-full w-64 flex-col bg-sidebar-background border-r border-sidebar-border shadow-lg">
-      <div className="p-4 border-b border-sidebar-border bg-sidebar-background">
+    <div className="flex h-full w-full flex-col bg-sidebar p-3 text-sidebar-foreground border-r border-sidebar-border">
+      {/* Cabeçalho */}
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-lg font-semibold">Conversas</h2>
         <Button
           onClick={onNewConversation}
-          className="w-full gradient-primary hover:opacity-90 transition-smooth shadow-glow text-base font-semibold"
+          size="icon"
+          variant="ghost"
+          className="hover:bg-sidebar-accent/50 hover:text-primary transition"
         >
-          <Plus className="mr-2 h-5 w-5" />
-          Nova Conversa
+          <Plus className="h-5 w-5" />
         </Button>
       </div>
 
-      <ScrollArea className="flex-1 px-3 scrollbar-thin">
-        <div className="space-y-2 py-3">
-          {conversations.map((conversation) => (
+      {/* Lista de conversas */}
+      <div className="flex-1 overflow-y-auto space-y-1 pr-1">
+        {conversations.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-6">
+            Nenhuma conversa ainda.
+          </p>
+        ) : (
+          conversations.map((conversation) => (
             <div
               key={conversation.id}
               className={cn(
-                "group relative flex items-center gap-3 rounded-lg px-3 py-3 transition-all duration-300 border",
+                "group relative flex items-center gap-3 rounded-lg px-3 py-3 transition-all duration-300 border cursor-pointer",
                 currentConversationId === conversation.id
                   ? "bg-sidebar-accent border-primary/20 shadow-sm"
                   : "hover:bg-sidebar-accent/50 border-transparent hover:border-sidebar-border",
                 deletingId === conversation.id && "opacity-0 scale-95"
               )}
+              onClick={() => onSelectConversation(conversation.id)}
             >
               {editingId === conversation.id ? (
                 <div className="flex-1 flex items-center gap-2">
@@ -97,8 +114,8 @@ export function ChatSidebar({
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") saveEdit();
-                      if (e.key === "Escape") cancelEdit();
+                      if (e.key === "Enter") saveEdit()
+                      if (e.key === "Escape") cancelEdit()
                     }}
                     className="h-7 text-sm bg-background"
                     autoFocus
@@ -123,69 +140,53 @@ export function ChatSidebar({
               ) : (
                 <>
                   <MessageSquare className="h-5 w-5 shrink-0 text-primary" />
-                  <button
-                    onClick={() => onSelectConversation(conversation.id)}
-                    className="flex-1 truncate text-left text-base font-medium text-sidebar-foreground"
-                  >
+                  <span className="flex-1 truncate text-left text-base font-medium text-sidebar-foreground">
                     {conversation.title}
-                  </button>
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 w-7 p-0 text-sidebar-foreground/60 hover:text-destructive hover:bg-destructive/10"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(conversation.id);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                  </span>
+
+                  {/* Menu de três pontinhos */}
+                  <div className="absolute right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-7 w-7 p-0 text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+                          className="h-7 w-7 p-0 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent 
-                        align="end" 
-                        className="w-48 bg-popover z-50"
+
+                      <DropdownMenuContent
+                        align="end"
+                        className="w-48 bg-popover z-[9999]"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            startEditing(conversation);
-                          }}
+                          onClick={() => startEditing(conversation)}
                           className="cursor-pointer hover:bg-muted focus:bg-muted"
                         >
                           <Edit2 className="mr-2 h-4 w-4" />
-                          Renomear conversa
+                          Renomear
                         </DropdownMenuItem>
+
                         <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onDuplicateConversation(conversation.id);
-                          }}
+                          onClick={() =>
+                            onDuplicateConversation(conversation.id)
+                          }
                           className="cursor-pointer hover:bg-muted focus:bg-muted"
                         >
                           <Copy className="mr-2 h-4 w-4" />
-                          Duplicar conversa
+                          Duplicar
                         </DropdownMenuItem>
+
                         <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(conversation.id);
-                          }}
+                          onClick={() => handleDelete(conversation.id)}
                           className="cursor-pointer text-destructive hover:bg-destructive/10 focus:bg-destructive/10 focus:text-destructive"
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
-                          Excluir conversa
+                          Excluir
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -193,9 +194,9 @@ export function ChatSidebar({
                 </>
               )}
             </div>
-          ))}
-        </div>
-      </ScrollArea>
+          ))
+        )}
+      </div>
     </div>
-  );
+  )
 }
