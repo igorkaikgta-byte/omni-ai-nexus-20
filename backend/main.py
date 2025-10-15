@@ -1,34 +1,47 @@
+# main.py
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from openai import OpenAI
-import os
+import openai  # se você usar OpenAI para a IA
 
+# Inicializa o app
 app = FastAPI()
 
-# 👇 Coloque aqui sua chave da OpenAI
-os.environ["OPENAI_API_KEY"] = "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"
+# Habilita CORS para qualquer origem (ou coloque o domínio do seu front)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # para produção, coloque seu domínio
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-client = OpenAI()
-
-@app.get("/")
-def home():
-    return {"message": "Backend rodando com IA 🚀"}
-
+# Modelo da requisição
 class Message(BaseModel):
-    message: str
+    user: str
+    text: str
 
-@app.post("/ai/message")
-def chat(message: Message):
+# Endpoint para o chat
+@app.post("/message")
+async def message_endpoint(msg: Message):
+    user_text = msg.text
+
     try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "Você é um assistente amigável e inteligente."},
-                {"role": "user", "content": message.message}
-            ]
-        )
-        answer = response.choices[0].message.content
-        return {"response": answer}
-    except Exception as e:
-        return {"error": str(e)}
+        # Aqui você chama sua IA (exemplo com OpenAI)
+        # Substitua com sua lógica de IA ou Sienge
+        # Exemplo de resposta dummy:
+        reply = f"Você disse: {user_text}"
 
+        # Se usar OpenAI:
+        # openai.api_key = "SUA_CHAVE"
+        # response = openai.ChatCompletion.create(
+        #     model="gpt-3.5-turbo",
+        #     messages=[{"role": "user", "content": user_text}]
+        # )
+        # reply = response.choices[0].message.content
+
+        return {"response": reply}
+
+    except Exception as e:
+        print("Erro ao processar mensagem:", e)
+        return {"response": "Desculpe, ocorreu um erro ao tentar responder."}
