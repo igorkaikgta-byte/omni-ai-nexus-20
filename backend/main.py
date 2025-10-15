@@ -25,6 +25,7 @@ class Message(BaseModel):
 @app.post("/message")
 async def message_endpoint(msg: Message):
     user_text = msg.text
+    print(f"Mensagem recebida no backend: {user_text}") # <-- linha que você vai adicionar
 
     try:
         # Aqui você chama sua IA (exemplo com OpenAI)
