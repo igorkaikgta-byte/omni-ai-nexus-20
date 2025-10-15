@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import openai
-import os  # <--- importar os
+import os
 
 # Inicializa FastAPI
 app = FastAPI()
@@ -29,7 +29,7 @@ async def message_endpoint(msg: Message):
 
     try:
         # Pega a chave da variável de ambiente
-        openai.api_key = os.getenv("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")
+        openai.api_key = os.getenv("OPENAI_API_KEY")
         if not openai.api_key:
             raise ValueError("Chave OpenAI não encontrada na variável de ambiente.")
 
