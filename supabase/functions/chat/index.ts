@@ -2,109 +2,98 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Função para processar arquivos e extrair conteúdo
+// 🔹 URL fixa do seu backend no Render
+const BACKEND_URL = "https://omni-ai-nexus-20.onrender.com";
+
+// 🔹 Função para processar arquivos
 async function processFiles(files: Array<{ name: string; type: string; data: string }>) {
   const processedFiles = [];
-  
+
   for (const file of files) {
-    console.log('Processing file:', file.name, 'type:', file.type);
-    
-    // Para imagens, retornar diretamente para o modelo multimodal
-    if (file.type.startsWith('image/')) {
+    console.log("Processing file:", file.name, "type:", file.type);
+
+    if (file.type.startsWith("image/")) {
       processedFiles.push({
-        type: 'image',
+        type: "image",
         name: file.name,
         mimeType: file.type,
-        data: file.data
+        data: file.data,
       });
-    }
-    // Para arquivos de texto
-    else if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+    } else if (file.type === "text/plain" || file.name.endsWith(".txt")) {
       try {
         const text = atob(file.data);
         processedFiles.push({
-          type: 'text',
+          type: "text",
           name: file.name,
-          content: text
+          content: text,
         });
       } catch (e) {
-        console.error('Error decoding text file:', e);
+        console.error("Error decoding text file:", e);
       }
-    }
-    // Para PDFs e outros documentos, extrair informações básicas
-    else if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+    } else if (file.type === "application/pdf" || file.name.endsWith(".pdf")) {
       processedFiles.push({
-        type: 'document',
+        type: "document",
         name: file.name,
-        fileType: 'PDF',
-        note: 'Documento PDF anexado'
+        fileType: "PDF",
+        note: "Documento PDF anexado",
       });
-    }
-    else if (file.type.includes('word') || file.name.endsWith('.docx') || file.name.endsWith('.doc')) {
+    } else if (file.type.includes("word") || file.name.endsWith(".docx") || file.name.endsWith(".doc")) {
       processedFiles.push({
-        type: 'document',
+        type: "document",
         name: file.name,
-        fileType: 'Word',
-        note: 'Documento Word anexado'
+        fileType: "Word",
+        note: "Documento Word anexado",
       });
-    }
-    else if (file.type.includes('sheet') || file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.csv')) {
+    } else if (file.type.includes("sheet") || file.name.endsWith(".xlsx") || file.name.endsWith(".xls") || file.name.endsWith(".csv")) {
       processedFiles.push({
-        type: 'document',
+        type: "document",
         name: file.name,
-        fileType: 'Planilha',
-        note: 'Planilha anexada'
+        fileType: "Planilha",
+        note: "Planilha anexada",
       });
-    }
-    else {
+    } else {
       processedFiles.push({
-        type: 'unknown',
+        type: "unknown",
         name: file.name,
-        note: 'Arquivo anexado'
+        note: "Arquivo anexado",
       });
     }
   }
-  
+
   return processedFiles;
 }
 
-// Função para formatar mensagens com arquivos para o modelo
+// 🔹 Função para formatar mensagens com arquivos
 function formatMessagesWithFiles(messages: any[], processedFiles: any[]) {
-  if (processedFiles.length === 0) {
-    return messages;
-  }
-  
+  if (processedFiles.length === 0) return messages;
+
   const formattedMessages = [...messages];
   const lastMessageIndex = formattedMessages.length - 1;
   const lastMessage = formattedMessages[lastMessageIndex];
-  
-  // Separar imagens e outros arquivos
-  const imageFiles = processedFiles.filter(f => f.type === 'image');
-  const otherFiles = processedFiles.filter(f => f.type !== 'image');
-  
-  // Se houver imagens, usar formato multimodal
+
+  const imageFiles = processedFiles.filter((f) => f.type === "image");
+  const otherFiles = processedFiles.filter((f) => f.type !== "image");
+
   if (imageFiles.length > 0) {
     const contentParts: any[] = [];
-    
-    // Adicionar texto original
-    if (typeof lastMessage.content === 'string') {
+
+    if (typeof lastMessage.content === "string") {
       contentParts.push({
-        type: 'text',
-        text: lastMessage.content
+        type: "text",
+        text: lastMessage.content,
       });
     }
-    
-    // Adicionar contexto de outros arquivos
+
     if (otherFiles.length > 0) {
-      let filesContext = '\n\n📎 Arquivos anexados:\n';
+      let filesContext = "\n\n📎 Arquivos anexados:\n";
       for (const file of otherFiles) {
-        if (file.type === 'text') {
+        if (file.type === "text") {
           filesContext += `- 📄 ${file.name}:\n\`\`\`\n${file.content}\n\`\`\`\n`;
-        } else if (file.type === 'document') {
+        } else if (file.type === "document") {
           filesContext += `- 📋 ${file.name} (${file.fileType}) - Documento identificado mas conteúdo não extraído ainda.\n`;
         } else {
           filesContext += `- 📎 ${file.name}\n`;
@@ -112,135 +101,86 @@ function formatMessagesWithFiles(messages: any[], processedFiles: any[]) {
       }
       contentParts[0].text += filesContext;
     }
-    
-    // Adicionar imagens no formato correto
+
     for (const img of imageFiles) {
       contentParts.push({
-        type: 'image_url',
+        type: "image_url",
         image_url: {
-          url: `data:${img.mimeType};base64,${img.data}`
-        }
+          url: `data:${img.mimeType};base64,${img.data}`,
+        },
       });
     }
-    
-    // Substituir conteúdo da última mensagem
+
     formattedMessages[lastMessageIndex] = {
       ...lastMessage,
-      content: contentParts
+      content: contentParts,
     };
   } else {
-    // Apenas arquivos de texto/documentos
-    let filesContext = '\n\n📎 Arquivos anexados:\n';
+    let filesContext = "\n\n📎 Arquivos anexados:\n";
     for (const file of otherFiles) {
-      if (file.type === 'text') {
+      if (file.type === "text") {
         filesContext += `- 📄 ${file.name}:\n\`\`\`\n${file.content}\n\`\`\`\n`;
-      } else if (file.type === 'document') {
+      } else if (file.type === "document") {
         filesContext += `- 📋 ${file.name} (${file.fileType}) - Documento identificado mas conteúdo não extraído ainda.\n`;
       } else {
         filesContext += `- 📎 ${file.name}\n`;
       }
     }
-    
-    if (typeof lastMessage.content === 'string') {
-      lastMessage.content = lastMessage.content + filesContext;
+
+    if (typeof lastMessage.content === "string") {
+      lastMessage.content += filesContext;
     }
   }
-  
+
   return formattedMessages;
 }
 
+// 🔹 Servidor principal
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const { messages, files } = await req.json();
-    console.log('Received chat request with', messages.length, 'messages');
-    
-    if (files && files.length > 0) {
-      console.log('Received', files.length, 'files');
-    }
+    console.log("Received chat request with", messages.length, "messages");
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      console.error('LOVABLE_API_KEY not configured');
-      throw new Error('LOVABLE_API_KEY is not configured');
-    }
-
-    // Processar arquivos se houver
     let processedFiles: any[] = [];
     if (files && files.length > 0) {
       processedFiles = await processFiles(files);
-      console.log('Processed', processedFiles.length, 'files');
+      console.log("Processed", processedFiles.length, "files");
     }
 
-    // Formatar mensagens com contexto dos arquivos
     const formattedMessages = formatMessagesWithFiles(messages, processedFiles);
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
+    // 🚀 Chama seu backend hospedado no Render
+    const response = await fetch(`${BACKEND_URL}/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: 'Você é uma IA assistente inteligente e prestativa. Responda de forma clara, concisa e profissional em português do Brasil. Você tem acesso a múltiplas capacidades e pode ajudar com diversas tarefas. Quando arquivos forem anexados, analise o conteúdo e responda com base nas informações fornecidas.'
-          },
-          ...formattedMessages
-        ],
-        stream: true,
+        messages: formattedMessages,
+        files: processedFiles,
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AI Gateway error:', response.status, errorText);
-      
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: 'Limite de taxa excedido. Por favor, tente novamente em alguns instantes.' }),
-          { 
-            status: 429, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        );
-      }
-      
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'Pagamento necessário. Por favor, adicione créditos ao seu workspace.' }),
-          { 
-            status: 402, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        );
-      }
-
-      throw new Error(`AI Gateway error: ${response.status}`);
+      console.error("Backend error:", response.status, errorText);
+      throw new Error(`Backend error: ${response.status}`);
     }
 
-    // Return the streaming response directly
     return new Response(response.body, {
       headers: {
         ...corsHeaders,
-        'Content-Type': 'text/event-stream',
+        "Content-Type": "text/event-stream",
       },
     });
-
   } catch (err) {
-    console.error('Error in chat function:', err);
-    const errorMessage = err instanceof Error ? err.message : 'An error occurred';
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+    console.error("Error in chat function:", err);
+    const errorMessage = err instanceof Error ? err.message : "An error occurred";
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
