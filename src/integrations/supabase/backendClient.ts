@@ -1,8 +1,9 @@
-export const BACKEND_URL = "https://omni-ai-nexus-20.onrender.com"; // sua URL do Render
+// backendClient.ts
+export const BACKEND_URL = "https://omni-ai-nexus-20.onrender.com"; // URL do Render
 
 export async function sendMessageToBackend(user: string, text: string) {
   try {
-    const response = await fetch(`${BACKEND_URL}/mensagem`, {
+    const response = await fetch(`${BACKEND_URL}/mensagem`, {  // rota padronizada
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ user, text }),
