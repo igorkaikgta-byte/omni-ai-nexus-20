@@ -28,7 +28,7 @@ async def message_endpoint(msg: Message):
 
     try:
         # Sua chave OpenAI (ideal usar variável de ambiente depois)
-        openai.api_key = "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"
+        openai.api_key = "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"
 
         # Chamada ao ChatGPT
         response = openai.ChatCompletion.create(
