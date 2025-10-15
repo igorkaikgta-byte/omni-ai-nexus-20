@@ -2,47 +2,35 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import openai  # se você usar OpenAI para a IA
+import openai
 
-# Inicializa o app
 app = FastAPI()
 
-# Habilita CORS para qualquer origem (ou coloque o domínio do seu front)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # para produção, coloque seu domínio
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Modelo da requisição
 class Message(BaseModel):
     user: str
     text: str
 
-# Endpoint para o chat
-@app.post("/message")
+@app.post("/mensagem")  # OBS: rota deve bater com o que o Lovable chama
 async def message_endpoint(msg: Message):
-    user_text = msg.text
-    print(f"Mensagem recebida no backend: {user_text}") # <-- linha que você vai adicionar
-
+    print(f"Recebi mensagem do Lovable: {msg}")  # print para checar se está chegando
     try:
-        # Aqui você chama sua IA (exemplo com OpenAI)
-        # Substitua com sua lógica de IA ou Sienge
-        # Exemplo de resposta dummy:
-        reply = f"Você disse: {user_text}"
-
-        # Se usar OpenAI:
-        # openai.api_key = "SUA_CHAVE"
-        # response = openai.ChatCompletion.create(
-        #     model="gpt-3.5-turbo",
-        #     messages=[{"role": "user", "content": user_text}]
-        # )
-        # reply = response.choices[0].message.content
-
+        openai.api_key = "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"  # substitua pela sua chave
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": msg.text}]
+        )
+        reply = response.choices[0].message.content
+        print(f"Resposta da OpenAI: {reply}")
         return {"response": reply}
-
     except Exception as e:
         print("Erro ao processar mensagem:", e)
-        return {"response": "Desculpe, ocorreu um erro ao tentar responder."}
+        return {"response": "Erro ao se comunicar com a OpenAI."}
+
