@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import openai
+import os  # <--- importar os
 
 # Inicializa FastAPI
 app = FastAPI()
@@ -22,13 +23,15 @@ class Message(BaseModel):
     text: str
 
 # Endpoint para receber mensagens do Lovable
-@app.post("/mensagem")  # rota padronizada
+@app.post("/mensagem")
 async def message_endpoint(msg: Message):
     print(f"📩 Recebi mensagem do usuário '{msg.user}': {msg.text}")
 
     try:
-        # Sua chave OpenAI (ideal usar variável de ambiente depois)
-        openai.api_key = "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"
+        # Pega a chave da variável de ambiente
+        openai.api_key = os.getenv("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")
+        if not openai.api_key:
+            raise ValueError("Chave OpenAI não encontrada na variável de ambiente.")
 
         # Chamada ao ChatGPT
         response = openai.ChatCompletion.create(
