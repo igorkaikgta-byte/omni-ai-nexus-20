@@ -22,16 +22,20 @@ class Message(BaseModel):
     user: str
     text: str
 
-# Endpoint para receber mensagens do Lovable
+# Endpoint principal para receber mensagens
 @app.post("/mensagem")
 async def message_endpoint(msg: Message):
     print(f"📩 Recebi mensagem do usuário '{msg.user}': {msg.text}")
 
     try:
         # Pega a chave da variável de ambiente
-        openai.api_key = os.getenv("OPENAI_API_KEY")
-        if not openai.api_key:
-            raise ValueError("Chave OpenAI não encontrada na variável de ambiente.")
+        chave_openai = os.getenv("OPENAI_API_KEY")
+        print("🔑 Chave OpenAI:", "CONFIGURADA" if chave_openai else "NÃO CONFIGURADA")
+        
+        if not chave_openai:
+            return {"response": "Erro: chave OpenAI não configurada no Render."}
+
+        openai.api_key = chave_openai
 
         # Chamada ao ChatGPT
         response = openai.ChatCompletion.create(
@@ -39,7 +43,7 @@ async def message_endpoint(msg: Message):
             messages=[
                 {"role": "system", "content": "Você é um assistente útil e direto."},
                 {"role": "user", "content": msg.text},
-            ]
+            ],
         )
 
         reply = response.choices[0].message.content.strip()
@@ -49,7 +53,7 @@ async def message_endpoint(msg: Message):
 
     except Exception as e:
         print("❌ Erro ao processar mensagem:", e)
-        return {"response": "Erro ao se comunicar com a OpenAI."}
+        return {"response": f"Erro ao se comunicar com a OpenAI: {e}"}
 
 # Rota simples de teste
 @app.get("/")
