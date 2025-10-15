@@ -1,5 +1,5 @@
 // backendClient.ts
-export const BACKEND_URL = "https://meu-backend.onrender.com"; // sua URL do Render
+export const BACKEND_URL = "https://omni-ai-nexus-20.onrender.com/"; // sua URL do Render
 
 export async function sendMessageToBackend(user: string, text: string) {
   try {
