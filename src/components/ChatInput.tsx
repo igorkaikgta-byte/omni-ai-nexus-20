@@ -4,7 +4,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useState, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
-import { sendMessageToBackend } from "@/integrations/backendClient";
+import { sendMessageToBackend } from "@/integrations/supabase/backendClient";
+
 
 interface ChatInputProps {
   onSendMessage: (content: string, files?: File[], fromUser?: boolean) => void;
