@@ -4,9 +4,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { useState, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
+import { sendMessageToBackend } from "@/integrations/backendClient";
 
 interface ChatInputProps {
-  onSendMessage: (content: string, files?: File[]) => void;
+  onSendMessage: (content: string, files?: File[], fromUser?: boolean) => void;
   isLoading: boolean;
 }
 
@@ -19,19 +20,23 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
 
   // Atualiza a mensagem quando o transcript muda
   useEffect(() => {
-    if (transcript) {
-      setMessage(transcript);
-    }
+    if (transcript) setMessage(transcript);
   }, [transcript]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if ((message.trim() || selectedFiles.length > 0) && !isLoading) {
-      onSendMessage(message, selectedFiles);
-      setMessage("");
-      setSelectedFiles([]);
-      resetTranscript();
-    }
+    if ((!message.trim() && selectedFiles.length === 0) || isLoading) return;
+
+    // envia mensagem do usuário
+    onSendMessage(message, selectedFiles, true);
+
+    setMessage("");
+    setSelectedFiles([]);
+    resetTranscript();
+
+    // envia para o backend e pega resposta da IA
+    const aiResponse = await sendMessageToBackend("user", message);
+    onSendMessage(aiResponse, [], false);
   };
 
   const handleMicClick = () => {
@@ -49,7 +54,7 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
 
-    // Validar tamanho dos arquivos (max 20MB)
+    // Valida tamanho dos arquivos (max 20MB)
     const invalidFiles = files.filter(file => file.size > 20 * 1024 * 1024);
     if (invalidFiles.length > 0) {
       toast({
@@ -60,7 +65,7 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
       return;
     }
 
-    // Validar número de arquivos (max 10)
+    // Valida número de arquivos (max 10)
     if (selectedFiles.length + files.length > 10) {
       toast({
         title: "Muitos arquivos",
@@ -123,7 +128,7 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
           type="button"
           variant="ghost"
           size="icon"
-          className={`shrink-0 transition-smooth hover:scale-105 ${isListening ? 'text-destructive animate-pulse' : ''}`}
+          className={`shrink-0 transition-smooth hover:scale-105 ${isListening ? "text-destructive animate-pulse" : ""}`}
           disabled={isLoading}
           onClick={handleMicClick}
           title={isListening ? "Parar gravação" : "Gravar áudio"}
@@ -135,11 +140,7 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={
-            selectedFiles.length > 0
-              ? "Adicione uma mensagem (opcional)..."
-              : "Digite sua mensagem ou envie um arquivo..."
-          }
+          placeholder={selectedFiles.length > 0 ? "Adicione uma mensagem (opcional)..." : "Digite sua mensagem ou envie um arquivo..."}
           className="min-h-[60px] max-h-[200px] resize-none bg-background"
           disabled={isLoading}
         />
@@ -150,11 +151,7 @@ export function ChatInput({ onSendMessage, isLoading }: ChatInputProps) {
           className="shrink-0 gradient-primary hover:opacity-90 transition-smooth shadow-glow hover:scale-105"
           disabled={isLoading || (!message.trim() && selectedFiles.length === 0)}
         >
-          {isLoading ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            <Send className="h-5 w-5" />
-          )}
+          {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
         </Button>
       </div>
     </form>
